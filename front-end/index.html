@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Produits</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .form-container {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-field {
+            margin-bottom: 15px;
+        }
+
+        .form-field input {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-field input:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.2);
+        }
+
+        .add-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .add-button:hover {
+            background-color: #45a049;
+        }
+
+        .search-container {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.2);
+        }
+
+        #searchResults {
+            margin-top: 20px;
+        }
+
+        .product-card {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-card img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-right: 15px;
+        }
+
+        .product-info {
+            flex-grow: 1;
+        }
+
+        .product-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .product-price {
+            color: #666;
+        }
+
+        .delete-button {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .delete-button:hover {
+            background-color: #e53935;
+        }
+
+        .min-price-button {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .min-price-button:hover {
+            background-color: #1E88E5;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gestion des Produits</h1>
+
+    <!-- Formulaire d'ajout de produit -->
+    <div class="form-container">
+        <h2>Ajouter un Produit</h2>
+        <div class="form-field">
+            <input type="text" id="productName" placeholder="Nom du produit">
+        </div>
+        <div class="form-field">
+            <input type="number" id="productPrice" placeholder="Prix du produit">
+        </div>
+        <button class="add-button" onclick="addProduct()">Ajouter</button>
+    </div>
+
+    <!-- Champ de recherche -->
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="Rechercher un produit...">
+    </div>
+
+    <!-- Bouton pour trouver le produit le moins cher -->
+    <button class="min-price-button" onclick="findMinPriceProduct()">Trouver le produit le moins cher</button>
+
+    <!-- Liste des résultats de recherche -->
+    <div id="searchResults"></div>
+
+    <script>
+        const apiUrl = 'http://localhost:8081/api/produits';
+        
+        // Fonction de recherche
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+        
+        searchInput.addEventListener('input', async function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            
+            if (searchTerm.length < 2) {
+                searchResults.innerHTML = '';
+                return;
+            }
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error('Erreur réseau');
+                
+                const products = await response.json();
+                const filteredProducts = products.filter(product => 
+                    product.nom.toLowerCase().includes(searchTerm)
+                );
+
+                displaySearchResults(filteredProducts);
+            } catch (error) {
+                console.error('Erreur de recherche:', error);
+                searchResults.innerHTML = '<p>Erreur lors de la recherche</p>';
+            }
+        });
+
+        // Fonction pour afficher les résultats de la recherche
+        function displaySearchResults(products) {
+            searchResults.innerHTML = '';
+            
+            if (products.length === 0) {
+                searchResults.innerHTML = '<p>Aucun produit trouvé</p>';
+                return;
+            }
+
+            products.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                
+                productCard.innerHTML = `
+                    <div class="product-info">
+                        <div class="product-name">${product.nom}</div>
+                        <div class="product-price">${product.prix} €</div>
+                    </div>
+                    <button class="delete-button" onclick="deleteProduct(${product.id})">Supprimer</button>
+                `;
+                
+                searchResults.appendChild(productCard);
+            });
+        }
+
+        // Fonction pour supprimer un produit
+        async function deleteProduct(id) {
+            if (confirm('Voulez-vous vraiment supprimer ce produit ?')) {
+                try {
+                    const response = await fetch(`${apiUrl}/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        alert('Produit supprimé avec succès.');
+                        searchInput.dispatchEvent(new Event('input'));  // Rafraîchir la liste des produits
+                    } else {
+                        alert('Erreur lors de la suppression du produit.');
+                    }
+                } catch (error) {
+                    console.error('Erreur de suppression:', error);
+                }
+            }
+        }
+
+        // Fonction pour ajouter un produit
+        async function addProduct() {
+            const nom = document.getElementById('productName').value;
+            const prix = document.getElementById('productPrice').value;
+
+            if (!nom || !prix) {
+                alert('Veuillez remplir tous les champs.');
+                return;
+            }
+
+            const newProduct = {
+                nom: nom,
+                prix: parseFloat(prix)
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(newProduct)
+                });
+
+                if (response.ok) {
+                    alert('Produit ajouté avec succès.');
+                    document.getElementById('productName').value = '';
+                    document.getElementById('productPrice').value = '';
+                    searchInput.dispatchEvent(new Event('input'));  // Rafraîchir la liste des produits
+                } else {
+                    alert('Erreur lors de l\'ajout du produit.');
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'ajout:', error);
+            }
+        }
+
+        // Fonction pour trouver le produit avec le prix le plus bas
+        async function findMinPriceProduct() {
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error('Erreur réseau');
+                
+                const products = await response.json();
+                if (products.length === 0) {
+                    alert('Aucun produit disponible.');
+                    return;
+                }
+
+                // Trouver le produit avec le prix minimum
+                const minPriceProduct = products.reduce((minProduct, currentProduct) => 
+                    currentProduct.prix < minProduct.prix ? currentProduct : minProduct
+                );
+
+                displaySearchResults([minPriceProduct]);  // Afficher le produit trouvé
+            } catch (error) {
+                console.error('Erreur lors de la recherche du produit le moins cher:', error);
+                searchResults.innerHTML = '<p>Erreur lors de la recherche du produit le moins cher</p>';
+            }
+        }
+    </script>
+</body>
+</html>
